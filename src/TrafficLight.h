@@ -19,7 +19,13 @@ enum TrafficLightPhase { red, green };
 
 template <class T> class MessageQueue {
 public:
+  TrafficLightPhase receive();
+  void send(TrafficLightPhase &&msg);
+
 private:
+  std::dequeue<TrafficLightPhase> _queue;
+  std::condition_variable VcondVar;
+  std::mutex _mutex;
 };
 
 // FP.1 : Define a class „TrafficLight“ which is a child class of TrafficObject.
