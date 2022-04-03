@@ -70,9 +70,11 @@ Intersection::queryStreets(std::shared_ptr<Street> incoming) {
 // enter
 void Intersection::addVehicleToQueue(std::shared_ptr<Vehicle> vehicle) {
   std::unique_lock<std::mutex> lck(_mtx);
+
   std::cout << "Intersection #" << _id
             << "::addVehicleToQueue: thread id = " << std::this_thread::get_id()
             << std::endl;
+
   lck.unlock();
 
   // add new vehicle to the end of the waiting line
@@ -90,9 +92,9 @@ void Intersection::addVehicleToQueue(std::shared_ptr<Vehicle> vehicle) {
   // FP.6b : use the methods TrafficLight::getCurrentPhase and
   // TrafficLight::waitForGreen to block the execution until the traffic light
   // turns green.
-  _trafficLight.getCurrentPhase();
-  _trafficLight.waitForGreen();
-
+  if (_trafficLight.getCurrentPhase() == TrafficLightPhase::red) {
+    _trafficLight.waitForGreen();
+  }
   lck.unlock();
 }
 
@@ -144,12 +146,11 @@ void Intersection::processVehicleQueue() {
 
 bool Intersection::trafficLightIsGreen() {
   // please include this part once you have solved the final project tasks
-  /*
+
   if (_trafficLight.getCurrentPhase() == TrafficLightPhase::green)
-      return true;
+    return true;
   else
-      return false;
-  */
+    return false;
 
   return true; // makes traffic light permanently green
 }

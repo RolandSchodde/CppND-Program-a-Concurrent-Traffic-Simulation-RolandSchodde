@@ -11,10 +11,11 @@ template <typename T> T MessageQueue<T>::receive() {
   // _condition.wait() to wait for and receive new messages and pull them from
   // the queue using move semantics. The received object should then be
   // returned by the receive function.
-  std::unique_lock<std::mutex> uLock;
+  std::unique_lock<std::mutex> uLock(_mutex);
   _condVar.wait(uLock, [this] { return !_queue.empty(); });
   T msg = std::move(_queue.back());
   _queue.pop_back();
+
   return msg;
 }
 
@@ -23,6 +24,7 @@ template <typename T> void MessageQueue<T>::send(T &&msg) {
   // std::lock_guard<std::mutex> as well as _condition.notify_one() to add a
   // new message to the queue and afterwards send a notification.
   std::lock_guard<std::mutex> uLock(_mutex);
+  _queue.clear();
   _queue.emplace_back(std::move(msg));
   _condVar.notify_one();
 }
@@ -52,11 +54,6 @@ void TrafficLight::simulate() {
   // FP.2b : Finally, the private method „cycleThroughPhases“ should be
   // started in a thread when the public method „simulate“ is called. To do
   // this, use the thread queue in the base class.
-
-  // std::future<void> future;
-  // future.emplace_back(std::async(
-  // std::launch::async, &TrafficLight<int>::cycleThroughPhases, queue));
-
   threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
@@ -81,24 +78,21 @@ void TrafficLight::cycleThroughPhases() {
   int traffic_light_duration;
 
   while (true) {
-    start = std::chrono::system_clock::now();
-
+    // start = std::chrono::system_clock::now();
     traffic_light_duration = uniform_dist(random_engine);
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(traffic_light_duration));
+    std::this_thread::sleep_for(std::chrono::seconds(traffic_light_duration));
     togglePhase();
-    _messageQueue.send(std::move(getCurrentPhase()));
-    end = std::chrono::system_clock::now();
-    std::cout << "Elapsed time: " << elapsed.count() << " ms";
-
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    _messageQueue.send(getCurrentPhase());
+    // end = std::chrono::system_clock::now();
+    // elapsed = end - start;
+    //  std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 }
 
 void TrafficLight::togglePhase() {
-  if (_currentPhase == ::TrafficLightPhase::red) {
-    _currentPhase = ::TrafficLightPhase::green;
+  if (_currentPhase == TrafficLightPhase::red) {
+    _currentPhase = TrafficLightPhase::green;
   } else {
-    _currentPhase = ::TrafficLightPhase::red;
+    _currentPhase = TrafficLightPhase::red;
   }
 }
